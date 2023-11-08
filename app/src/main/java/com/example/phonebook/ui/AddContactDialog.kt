@@ -24,7 +24,7 @@ fun AddContactDialog(
     AlertDialog(
         modifier = modifier,
         onDismissRequest = { onEvent(ContactEvent.HideDialog) },
-        title = {Text(text = "ds")},
+        title = {Text(text = "Add contact")},
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
