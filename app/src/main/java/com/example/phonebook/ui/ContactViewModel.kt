@@ -3,11 +3,16 @@ package com.example.phonebook.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.phonebook.data.ContactDAO
+import com.example.phonebook.domain.Contact
 import com.example.phonebook.domain.ContactEvent
 import com.example.phonebook.domain.ContactState
 import com.example.phonebook.domain.SortType
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,8 +27,16 @@ class ContactViewModel(
             SortType.LAST_NAME -> dao.getContactsOrderedByLastName()
             SortType.PHONE_NUMBER -> dao.getContactsOrderedByPhoneNumber()
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+
     private val _state = MutableStateFlow(ContactState())
+    val state = combine(_state, _sortType, _contacts) { state, sortType, contacts ->
+        state.copy(
+            contacts = contacts,
+            sortType = sortType
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ContactState())
+
 
     fun onEvent(event: ContactEvent) {
         when (event) {
@@ -35,7 +48,29 @@ class ContactViewModel(
             }
 
             ContactEvent.SaveContact -> {
+                val firstName = state.value.firstName
+                val lastName = state.value.lastName
+                val number = state.value.phoneNumber
 
+                if(firstName.isBlank() || lastName.isBlank() || number.isBlank()) {
+                    return
+                }
+
+                val contact = Contact(
+                    firstName = firstName,
+                    lastName = lastName,
+                    phoneNumber = number
+                )
+
+                viewModelScope.launch {
+                    dao.upsertContact(contact)
+                }
+                _state.update { it.copy(
+                    isAddingContact = false,
+                    firstName = "",
+                    lastName = "",
+                    phoneNumber = ""
+                ) }
             }
 
             ContactEvent.HideDialog -> _state.update {
