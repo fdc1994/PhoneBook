@@ -51,4 +51,9 @@ dependencies {
     // Room
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:2.6.0")
+
+    //Android X
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.5")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0-beta01")
+
 }
